@@ -1,0 +1,93 @@
+/* nodeStyles.css */
+
+.base-node {
+  width: 200px;
+  min-height: 80px;
+  max-height: none; /* Allow unlimited height expansion */
+  border: 3px solid #00135c; /* Using the same color as button type--C */
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.node-header {
+  background: #f5f5f5;
+  border-bottom: 2px solid #00135c; /* Matching the button border color */
+  padding: 8px 12px;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 5px 5px 0 0; /* Adjusted for thicker border */
+  color: #333;
+}
+
+.node-body {
+  padding: 12px;
+}
+
+.node-body label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #555;
+}
+
+.node-body input,
+.node-body select,
+.node-body textarea {
+  margin-top: 4px;
+  border: 2px solid #00135c; /* Matching button border color */
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: white;
+  color: #333;
+  transition: border-color 0.3s ease;
+}
+
+.node-body input:focus,
+.node-body select:focus,
+.node-body textarea:focus {
+  outline: none;
+  border-color: #003d82; /* Darker shade of button color on focus */
+  background: white;
+}
+
+/* Ensure textarea doesn't cause layout issues */
+.node-body textarea {
+  font-family: inherit;
+  box-sizing: border-box;
+  resize: vertical; /* Allow vertical resize only */
+}
+
+/* Handle styling to make them more visible and match button theme */
+.react-flow__handle {
+  width: 14px !important;
+  height: 14px !important;
+  border: 2px solid #00135c !important; /* Matching button border color */
+  background: #fff !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
+}
+
+.react-flow__handle-left {
+  left: -7px !important;
+}
+
+.react-flow__handle-right {
+  right: -7px !important;
+}
+
+.react-flow__handle:hover {
+  background: #f0f9ff !important;
+  border-color: #003d82 !important; /* Darker shade of button border */
+}
+
+.react-flow__handle.connecting {
+  background: #ff6b6b !important;
+  border-color: #fa5252 !important;
+}
+
+.react-flow__handle.valid {
+  background: #69db7c !important;
+  border-color: #51cf66 !important;
+}

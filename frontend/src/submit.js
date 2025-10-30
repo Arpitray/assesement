@@ -1,0 +1,383 @@
+import React from 'react';
+import styled from 'styled-components';
+import { useStore } from './store';
+import { shallow } from 'zustand/shallow';
+
+const selector = (state) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+});
+
+export const SubmitButton = () => {
+  const { nodes, edges } = useStore(selector, shallow);
+
+  const handleSubmit = async () => {
+    // Check nodes
+    if (nodes.length === 0) {
+      alert('⚠️ No nodes to submit!\n\nPlease add some nodes to your pipeline before submitting.');
+      return;
+    }
+
+    try {
+      // Pipeline data
+      const pipelineData = {
+        nodes: nodes,
+        edges: edges
+      };
+
+      // Loading state
+      const submitButton = document.querySelector('.button__text');
+      const buttonElement = document.querySelector('.button');
+      const originalText = submitButton.textContent;
+      submitButton.textContent = 'ANALYZING...';
+      buttonElement.disabled = true;
+
+      // Send data
+      const response = await fetch('http://localhost:8000/pipelines/parse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pipelineData)
+      });
+
+      // Reset button
+      submitButton.textContent = originalText;
+      buttonElement.disabled = false;
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Result message
+      let statusIcon = result.is_dag ? '✅' : '❌';
+      let statusMessage = result.is_dag 
+        ? 'Pipeline is valid (no cycles detected)'
+        : 'Pipeline has cycles - please review your connections';
+      
+      let connectivityInfo = '';
+      if (result.num_edges === 0 && result.num_nodes > 1) {
+        connectivityInfo = '\n\n💡 Tip: Connect your nodes with edges to create a flow!';
+      } else if (result.num_edges > 0) {
+        connectivityInfo = `\n\n🔗 Your pipeline has ${result.num_edges} connection${result.num_edges !== 1 ? 's' : ''}`;
+      }
+
+      // Show results
+      alert(
+        `${statusIcon} Pipeline Analysis Results\n\n` +
+        `📊 Statistics:\n` +
+        `• Nodes: ${result.num_nodes}\n` +
+        `• Edges: ${result.num_edges}\n` +
+        `• Valid DAG: ${result.is_dag ? 'Yes' : 'No'}\n\n` +
+        `🔍 Status: ${statusMessage}${connectivityInfo}`
+      );
+
+    } catch (error) {
+      // Reset button
+      const submitButton = document.querySelector('.button__text');
+      const buttonElement = document.querySelector('.button');
+      if (submitButton) {
+        submitButton.textContent = 'SUBMIT PIPELINE';
+        buttonElement.disabled = false;
+      }
+
+      console.error('Error submitting pipeline:', error);
+      
+      // Error messages
+      let errorMessage = 'Failed to analyze pipeline';
+      if (error.message.includes('fetch')) {
+        errorMessage = 'Cannot connect to backend server.\n\nPlease ensure the backend is running on http://localhost:8000';
+      } else if (error.message.includes('HTTP error')) {
+        errorMessage = `Server error: ${error.message}`;
+      } else {
+        errorMessage = error.message;
+      }
+      
+      alert(`❌ Error: ${errorMessage}`);
+    }
+  };
+
+  return (
+    <StyledWrapper>
+      <div className="container">
+        <button 
+          type="submit" 
+          onClick={handleSubmit}
+          className="button type--C"
+        >
+          <div className="button__line" />
+          <div className="button__line" />
+          <span className="button__text">SUBMIT PIPELINE</span>
+          <div className="button__drow1" />
+          <div className="button__drow2" />
+        </button>
+      </div>
+    </StyledWrapper>
+  );
+}
+
+const StyledWrapper = styled.div`
+  .type--A {
+    --line_color: #555555;
+    --back_color: #ffecf6;
+  }
+  .type--B {
+    --line_color: #1b1919;
+    --back_color: #e9ecff;
+  }
+  .type--C {
+    --line_color: #00135c;
+    --back_color: #defffa;
+  }
+  .button {
+    position: relative;
+    z-index: 0;
+    width: 280px; /* Increased to accommodate expanded text */
+    height: 56px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--line_color);
+    letter-spacing: 2px;
+    transition: all 0.3s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+    overflow: hidden; /* Prevent any overflow */
+  }
+  .button__text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    white-space: nowrap; /* Prevent text wrapping */
+    text-align: center;
+  }
+  .button::before,
+  .button::after,
+  .button__text::before,
+  .button__text::after {
+    content: "";
+    position: absolute;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--line_color);
+    transition: all 0.5s ease;
+  }
+  .button::before {
+    top: 0;
+    left: 64px; /* Adjusted for wider button */
+    width: calc(100% - 64px * 2 - 16px);
+  }
+  .button::after {
+    top: 0;
+    right: 64px; /* Adjusted for wider button */
+    width: 8px;
+  }
+  .button__text::before {
+    bottom: 0;
+    right: 64px; /* Adjusted for wider button */
+    width: calc(100% - 64px * 2 - 16px);
+  }
+  .button__text::after {
+    bottom: 0;
+    left: 64px; /* Adjusted for wider button */
+    width: 8px;
+  }
+  .button__line {
+    position: absolute;
+    top: 0;
+    width: 64px; /* Adjusted for wider button */
+    height: 100%;
+    overflow: hidden;
+  }
+  .button__line::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 150%;
+    height: 100%;
+    box-sizing: border-box;
+    border-radius: 300px;
+    border: solid 3px var(--line_color);
+  }
+  .button__line:nth-child(1),
+  .button__line:nth-child(1)::before {
+    left: 0;
+  }
+  .button__line:nth-child(2),
+  .button__line:nth-child(2)::before {
+    right: 0;
+  }
+  .button:hover {
+    letter-spacing: 6px;
+  }
+  .button:hover::before,
+  .button:hover .button__text::before {
+    width: 8px;
+  }
+  .button:hover::after,
+  .button:hover .button__text::after {
+    width: calc(100% - 64px * 2 - 16px); /* Adjusted for wider button */
+  }
+  .button__drow1,
+  .button__drow2 {
+    position: absolute;
+    z-index: -1;
+    border-radius: 16px;
+    transform-origin: 16px 16px;
+  }
+  .button__drow1 {
+    top: -16px;
+    left: 48px; /* Adjusted for wider button */
+    width: 32px;
+    height: 0;
+    transform: rotate(30deg);
+  }
+  .button__drow2 {
+    top: 44px;
+    left: 88px; /* Adjusted for wider button */
+    width: 32px;
+    height: 0;
+    transform: rotate(-127deg);
+  }
+  .button__drow1::before,
+  .button__drow1::after,
+  .button__drow2::before,
+  .button__drow2::after {
+    content: "";
+    position: absolute;
+  }
+  .button__drow1::before {
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 32px;
+    border-radius: 16px;
+    transform-origin: 16px 16px;
+    transform: rotate(-60deg);
+  }
+  .button__drow1::after {
+    top: -10px;
+    left: 45px;
+    width: 0;
+    height: 32px;
+    border-radius: 16px;
+    transform-origin: 16px 16px;
+    transform: rotate(69deg);
+  }
+  .button__drow2::before {
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 32px;
+    border-radius: 16px;
+    transform-origin: 16px 16px;
+    transform: rotate(-146deg);
+  }
+  .button__drow2::after {
+    bottom: 26px;
+    left: -40px;
+    width: 0;
+    height: 32px;
+    border-radius: 16px;
+    transform-origin: 16px 16px;
+    transform: rotate(-262deg);
+  }
+  .button__drow1,
+  .button__drow1::before,
+  .button__drow1::after,
+  .button__drow2,
+  .button__drow2::before,
+  .button__drow2::after {
+    background: var(--back_color);
+  }
+  .button:hover .button__drow1 {
+    animation: drow1 ease-in 0.06s;
+    animation-fill-mode: forwards;
+  }
+  .button:hover .button__drow1::before {
+    animation: drow2 linear 0.08s 0.06s;
+    animation-fill-mode: forwards;
+  }
+  .button:hover .button__drow1::after {
+    animation: drow3 linear 0.03s 0.14s;
+    animation-fill-mode: forwards;
+  }
+  .button:hover .button__drow2 {
+    animation: drow4 linear 0.06s 0.2s;
+    animation-fill-mode: forwards;
+  }
+  .button:hover .button__drow2::before {
+    animation: drow3 linear 0.03s 0.26s;
+    animation-fill-mode: forwards;
+  }
+  .button:hover .button__drow2::after {
+    animation: drow5 linear 0.06s 0.32s;
+    animation-fill-mode: forwards;
+  }
+  @keyframes drow1 {
+    0% {
+      height: 0;
+    }
+    100% {
+      height: 100px;
+    }
+  }
+  @keyframes drow2 {
+    0% {
+      width: 0;
+      opacity: 0;
+    }
+    10% {
+      opacity: 0;
+    }
+    11% {
+      opacity: 1;
+    }
+    100% {
+      width: 120px;
+    }
+  }
+  @keyframes drow3 {
+    0% {
+      width: 0;
+    }
+    100% {
+      width: 80px;
+    }
+  }
+  @keyframes drow4 {
+    0% {
+      height: 0;
+    }
+    100% {
+      height: 120px;
+    }
+  }
+  @keyframes drow5 {
+    0% {
+      width: 0;
+    }
+    100% {
+      width: 124px;
+    }
+  }
+
+  .container {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden; /* Prevent any overflow that could cause page shifts */
+  }
+  .button:not(:last-child) {
+    margin-bottom: 64px;
+  }
+`;
