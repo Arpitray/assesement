@@ -12,7 +12,6 @@ import "./nodeStyles.css";
  * - children: node-specific UI
  */
 const BaseNode = ({ id, data, typeLabel, inputs = [], outputs = [], children }) => {
-  // Force re-render
   const inputHandles = React.useMemo(() => inputs, [JSON.stringify(inputs)]);
   const outputHandles = React.useMemo(() => outputs, [JSON.stringify(outputs)]);
   
